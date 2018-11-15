@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8"/>
+    <title>WebSocket 客户端测试</title>
+    <style>
+        #responseText {
+            width: 800px; height: 450px; border: 1px solid #ccc;
+            overflow-x: hidden;
+            overflow-y: scroll;
+            padding-left: 28px;
+        }
+
+        #responseText p {
+            width: 100%;
+        }
+    </style>
+    <script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+    $(function() {
+
+        $('#btn').click(function() {
+            initSocket();
+        });
+
+        function initSocket() {
+            var socket;
+            if (!window.WebSocket) {
+                window.WebSocket = window.MozWebSocket;
+            }
+            if (window.WebSocket) {
+                socket = new WebSocket("ws://localhost:8888/websocket");
+                socket.onmessage = function(event) {
+                    var data = {};
+                    try {
+                        data = JSON.parse(event.data);
+                    } catch(e) {
+                        alert("数据解析失败!")
+                    }
+                    var ta = document.getElementById('responseText');
+                    if (data.msgType == "rawData") {
+                        ta.innerHTML += ('<p>' + formatUnixtimestamp(data.timestamp) + ' 水文站:' + data.monitor + '; 传感器型号: ' + data.sensortypename + '; 监测值: ' + data.value + '</p>');
+                    }
+                };
+                socket.onopen = function(event) {
+                    var ta = document.getElementById('responseText');
+                    ta.value = "连接开启!";
+                };
+                socket.onclose = function(event) {
+                    var ta = document.getElementById('responseText');
+                    ta.innerHTML += ("<p>连接被关闭</p>");
+                };
+            } else {
+                alert("你的浏览器不支持 WebSocket！");
+            }
+        }
+
+        window.onbeforeunload = function(event) {
+            event.returnValue = "刷新提醒";
+        };
+
+        function formatUnixtimestamp (unixtimestamp) {
+            var unixtimestamp = new Date(parseInt(unixtimestamp));
+            var year = 1900 + unixtimestamp.getYear();
+            var month = "0" + (unixtimestamp.getMonth() + 1);
+            var date = "0" + unixtimestamp.getDate();
+            var hour = "0" + unixtimestamp.getHours();
+            var minute = "0" + unixtimestamp.getMinutes();
+            var second = "0" + unixtimestamp.getSeconds();
+            return year + "-" + month.substring(month.length-2, month.length)  + "-" + date.substring(date.length-2, date.length)
+                    + " " + hour.substring(hour.length-2, hour.length) + ":"
+                    + minute.substring(minute.length-2, minute.length) + ":"
+                    + second.substring(second.length-2, second.length);
+        }
+    })
+</script>
+<form onsubmit="return false;">
+    <h3>数据接收列表：</h3>
+    <div id="responseText"></div>
+    <br/>
+    <input type="button" id="btn" value="开始接收"/>
+</form>
+<br/>
+<br/>
+</body>
+</html>
