@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<mapper namespace="com.jouryu.mapper.MonitorMapper">
-    <resultMap id="MonitorMap" type="com.jouryu.model.Monitor">
+<mapper namespace="com.jouryu.socket.mapper.MonitorMapper">
+    <resultMap id="MonitorMap" type="com.jouryu.socket.model.Monitor">
         <id column="ids" jdbcType="VARCHAR" property="monitorId"/>
         <result column="stationName" jdbcType="VARCHAR" property="monitorName"/>
         <result column="siteCode" jdbcType="VARCHAR" property="monitorCode"/>
 
-        <collection ofType="com.jouryu.model.Sensor" property="sensors">
+        <collection ofType="com.jouryu.socket.model.Sensor" property="sensors">
             <id column="sensorId" jdbcType="VARCHAR" property="sensorId"/>
             <result column="stationIds" jdbcType="VARCHAR" property="monitorId"/>
             <result column="sensorType" jdbcType="VARCHAR" property="sensorType"/>

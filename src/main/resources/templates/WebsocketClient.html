@@ -4,14 +4,14 @@
     <meta charset="UTF-8"/>
     <title>WebSocket 客户端测试</title>
     <style>
-        #responseText {
-            width: 800px; height: 450px; border: 1px solid #ccc;
+        .message_box {
+            width: 46%; height: 450px; float: left; border: 1px solid #ccc;
             overflow-x: hidden;
             overflow-y: scroll;
-            padding-left: 28px;
+            margin-left: 30px;
         }
 
-        #responseText p {
+        .message_box p {
             width: 100%;
         }
     </style>
@@ -22,10 +22,11 @@
     $(function() {
 
         $('#btn').click(function() {
-            initSocket();
+            initSocket1();
+            initSocket2();
         });
 
-        function initSocket() {
+        function initSocket1() {
             var socket;
             if (!window.WebSocket) {
                 window.WebSocket = window.MozWebSocket;
@@ -57,6 +58,38 @@
             }
         }
 
+        function initSocket2() {
+            var socket;
+            if (!window.WebSocket) {
+                window.WebSocket = window.MozWebSocket;
+            }
+            if (window.WebSocket) {
+                socket = new WebSocket("ws://localhost:8889/websocket");
+                socket.onmessage = function(event) {
+//                    var data = {};
+//                    try {
+//                        data = JSON.parse(event.data);
+//                    } catch(e) {
+//                        alert("数据解析失败!")
+//                    }
+                    var ta = document.getElementById('responseText2');
+//                    if (data.msgType == "waveletAnalysis") {
+                        ta.innerHTML += ('<p>' + event.data + '</p>');
+//                    }
+                };
+                socket.onopen = function(event) {
+                    var ta = document.getElementById('responseText2');
+                    ta.value = "连接开启!";
+                };
+                socket.onclose = function(event) {
+                    var ta = document.getElementById('responseText2');
+                    ta.innerHTML += ("<p>连接被关闭</p>");
+                };
+            } else {
+                alert("你的浏览器不支持 WebSocket！");
+            }
+        }
+
         window.onbeforeunload = function(event) {
             event.returnValue = "刷新提醒";
         };
@@ -78,7 +111,8 @@
 </script>
 <form onsubmit="return false;">
     <h3>数据接收列表：</h3>
-    <div id="responseText"></div>
+    <div id="responseText" class="message_box"></div>
+    <div id="responseText2" class="message_box"></div>
     <br/>
     <input type="button" id="btn" value="开始接收"/>
 </form>
