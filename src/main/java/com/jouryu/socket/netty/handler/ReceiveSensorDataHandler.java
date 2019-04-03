@@ -93,7 +93,7 @@ public class ReceiveSensorDataHandler extends SimpleChannelInboundHandler<byte[]
             logger.info("传感器(" + getRemoteAddress(ctx) + ")发来注册信息：" + message);
             registerHandler(channel, message);
         } else if (message.length() >= 14) {
-            logger.info("[" + CacheData.getMonitorNameByChannelId(channelId) + "]传感器(" + getRemoteAddress(ctx) + ")" + message.substring(0, 2) + "发来数据：" + getValue(message));
+            logger.info("[" + CacheData.getMonitorNameByChannelId(channelId) + "]传感器(" + getRemoteAddress(ctx) + ")" + message.substring(0, 2) + "发来数据：" + getValue(channelId, message));
             // 往hbase里写入数据
             dataHandler(channel, message, datetime);
             // 往kafka队列里写入数据
@@ -195,9 +195,10 @@ public class ReceiveSensorDataHandler extends SimpleChannelInboundHandler<byte[]
      * @param message
      */
     private void dataHandler(Channel channel, String message, long datetime) {
+        String channelId =  getChannelId(channel);
         String sensorCode = message.substring(0, 2);
-        String value = getValue(message);
-        String tableName = hbasePrefix + Utils.getKeyByValue(CacheData.monitorMap, getChannelId(channel));
+        String value = getValue(channelId, message);
+        String tableName = hbasePrefix + Utils.getKeyByValue(CacheData.monitorMap, channelId);
 
         SimpleDateFormat rowTimeFormator = new SimpleDateFormat("yyyyMMddHH");
         SimpleDateFormat colTimeFormator = new SimpleDateFormat("yyyyMMddHHmmss");
@@ -208,7 +209,7 @@ public class ReceiveSensorDataHandler extends SimpleChannelInboundHandler<byte[]
         // rowkey为当前小时, 一小时内的数据都保存在一条记录中
         Put put = new Put(Bytes.toBytes(sensorCode + hourTime));
         put.addColumn(Bytes.toBytes("sensorInfo"), Bytes.toBytes("sensorType"), Bytes.toBytes(sensorCode));
-        put.addColumn(Bytes.toBytes("sensorData"), Bytes.toBytes(secondTime), Bytes.toBytes(value));
+        put.addColumn(Bytes.toBytes("originalData"), Bytes.toBytes(secondTime), Bytes.toBytes(value));
         datas.add(put);
         List<Mutation> results = hbaseService.saveOrUpdate(tableName, datas);
         if (results.size() < 1) {
@@ -218,13 +219,17 @@ public class ReceiveSensorDataHandler extends SimpleChannelInboundHandler<byte[]
 
     /**
      * 从接收到的数据中, 解析出检测的结果值
+     * @param channelId
      * @param message
      * @return
      */
-    private String getValue(String message) {
+    private String getValue(String channelId, String message) {
         String sensorCode = message.substring(0, 2);
-        Sensor sensor = CacheData.getSensorBySensorCode(sensorCode);
+        Sensor sensor = CacheData.getSensorBySensorCode(channelId, sensorCode);
         String value = message.replace(" ", "").substring(6, 10);
+        if (value == null) {
+            return "0.00";
+        }
         Double number = Integer.parseInt(value, 16) * sensor.getResolution();
         return String.format("%.2f", number);
     }
@@ -235,11 +240,12 @@ public class ReceiveSensorDataHandler extends SimpleChannelInboundHandler<byte[]
      * @param message
      */
     private void kafkaHandler(Channel channel, String message, long datetime) {
+        String channelId = getChannelId(channel);
         String sensorCode = message.substring(0, 2);
-        String monitorCode = Utils.getKeyByValue(CacheData.monitorMap, getChannelId(channel));
+        String monitorCode = Utils.getKeyByValue(CacheData.monitorMap,channelId);
         String topic = kafkaTopicPrefix + monitorCode;
-        Sensor sensor = CacheData.getSensorBySensorCode(sensorCode);
-        String msg = datetime + ":" + sensor.getSensorCode() + ":" + getValue(message);
+        Sensor sensor = CacheData.getSensorBySensorCode(channelId, sensorCode);
+        String msg = datetime + ":" + sensor.getSensorCode() + ":" + getValue(channelId, message);
         kafkaTemplate.send(topic, msg);
     }
 
@@ -248,18 +254,18 @@ public class ReceiveSensorDataHandler extends SimpleChannelInboundHandler<byte[]
      * @param message
      */
     private void websocketHanler(Channel channel, String message) {
+        String channelId = getChannelId(channel);
         String sensorCode = message.substring(0, 2);
-        String value = getValue(message);
+        String value = getValue(channelId, message);
         String time = String.valueOf(System.currentTimeMillis());
 
-        String monitorCode = Utils.getKeyByValue(CacheData.monitorMap, getChannelId(channel));
+        String monitorCode = Utils.getKeyByValue(CacheData.monitorMap, channelId);
         String monitorName = CacheData.getMonitorNameByCode(monitorCode);
 
-        Sensor sensor = CacheData.getSensorBySensorCode(sensorCode);
+        Sensor sensor = CacheData.getSensorBySensorCode(channelId, sensorCode);
         String sensorName = sensor.getSensorName();
-        String sensortype = sensor.getSensorType();
 
-        String jsonData = "{\"msgType\":\"rawData\",\"siteCode\":\"" + monitorCode + "\",\"monitor\":\"" + monitorName + "\",\"sensortypename\":\"" + sensorName + "\",\"sensorCode\":\"" + sensortype + "\",\"value\":\"" + value + "\",\"timestamp\":\"" + time + "\"}";
+        String jsonData = "{\"msgType\":\"rawData\",\"siteCode\":\"" + monitorCode + "\",\"monitor\":\"" + monitorName + "\",\"sensortypename\":\"" + sensorName + "\",\"sensorCode\":\"" + sensorCode + "\",\"value\":\"" + value + "\",\"timestamp\":\"" + time + "\"}";
 
         for (Channel websocketChannel : WebSocketFrameHandler.channels) {
             websocketChannel.writeAndFlush(new TextWebSocketFrame(jsonData));

@@ -43,7 +43,7 @@ public class RunNetty {
     public void run() throws Exception {
         init();
         new Thread(tcpServer).start();
-        new Thread(stormSocketServer).start();
+//        new Thread(stormSocketServer).start();
         new Thread(webSocketServer).start();
         // 启动模拟的传感器客户端
         testTcpClient.startClient();

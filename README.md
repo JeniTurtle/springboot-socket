@@ -4,9 +4,10 @@
 
 ## 介绍
 
-使用Netty分别实现了两个Socket server和一个socket client：
+使用Netty分别实现了三个Socket server和一个socket client：
 > * server1:9099 主要用来跟硬件传感器通信
 > * server2:8888/websocket 作为websocket服务端跟网页通信
+> * server2:8889/websocket 跟storm服务做数据通信，同时也作为websocket服务端跟网页通信
 > * client 作为模拟客户端，跟server1建立连接后，不断给服务端发送假数据
 
 整个项目启动后，主要做了下面几件事:

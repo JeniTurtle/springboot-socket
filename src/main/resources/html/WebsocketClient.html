@@ -23,7 +23,7 @@
 
         $('#btn').click(function() {
             initSocket1();
-            initSocket2();
+//            initSocket2();
         });
 
         function initSocket1() {
@@ -32,7 +32,7 @@
                 window.WebSocket = window.MozWebSocket;
             }
             if (window.WebSocket) {
-                socket = new WebSocket("ws://localhost:8888/websocket");
+                socket = new WebSocket("ws://sensor.jouryu.com:8888/websocket");
                 socket.onmessage = function(event) {
                     var data = {};
                     try {

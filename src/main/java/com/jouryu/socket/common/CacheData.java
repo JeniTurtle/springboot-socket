@@ -69,11 +69,14 @@ public final class CacheData {
      * @param sensorCode
      * @return
      */
-    public static Sensor getSensorBySensorCode(String sensorCode) {
+    public static Sensor getSensorBySensorCode(String channelId, String sensorCode) {
+        String monitorCode = Utils.getKeyByValue(monitorMap, channelId);
         for (Monitor monitor: monitorList) {
-            for (Sensor sensor : monitor.getSensors()) {
-                if (sensor.getSensorCode().equals(sensorCode)) {
-                    return sensor;
+            if (monitor.getMonitorCode().equals(monitorCode)) {
+                for (Sensor sensor : monitor.getSensors()) {
+                    if (sensor.getSensorCode().equals(sensorCode)) {
+                        return sensor;
+                    }
                 }
             }
         }

@@ -54,6 +54,7 @@ public class StormSocketFrameHandler extends SimpleChannelInboundHandler<TextWeb
         } else if (stormChannels.contains(incoming)) {
             // 判断是storm客户端发送的数据, 那么转发给所有浏览器客户端
             channels.forEach(channel -> channel.writeAndFlush(new TextWebSocketFrame(message)));
+            incoming.writeAndFlush(new TextWebSocketFrame("SocketServer数据接收成功!"));
         }
         System.out.println("客户端(" + nameList.get(incoming.id() + "") + ")发来信息: " + msg.text());
     }

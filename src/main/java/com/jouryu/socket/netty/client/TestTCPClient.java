@@ -109,11 +109,11 @@ public class TestTCPClient {
                 ctx.close();
             } else if(message.substring(2).startsWith(readCommand)) {
                 String sensorCode = message.substring(0, 2);
-                List<Double> list = simulatorListMap.get(sensorCode);
                 Iterator<Double> iterator = simulatorIteratorMap.get(sensorCode);
                 if (!iterator.hasNext()) {
+                    List<Double> list = simulatorListMap.get(sensorCode);
                     iterator = list.iterator();
-                    simulatorIteratorMap.put(message, iterator);
+                    simulatorIteratorMap.put(sensorCode, iterator);
                 }
                 Double value = iterator.next();
                 byte[] responseMsg = migrateShamMsg(sensorCode, value);

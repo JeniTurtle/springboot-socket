@@ -49,6 +49,7 @@ abstract class AbstractNettyServer implements Runnable {
             logger.error(e.getMessage());
         }
 
+        String host = getProperty("host");
         Integer port = Integer.valueOf(getProperty("port"));
         Integer bossCount = Integer.valueOf(getProperty("bossCount"));
         Integer workerCount = Integer.valueOf(getProperty("workerCount"));
@@ -56,7 +57,7 @@ abstract class AbstractNettyServer implements Runnable {
         backlog = Integer.valueOf(getProperty("backlog"));
         keepalive = Boolean.parseBoolean(getProperty("keepalive"));
         nodelay = Boolean.parseBoolean(getProperty("nodelay"));
-        socketrAdress = new InetSocketAddress(port);
+        socketrAdress = new InetSocketAddress(host, port);
         bossGroup = new NioEventLoopGroup(bossCount);
         workerGroup = new NioEventLoopGroup(workerCount);
 

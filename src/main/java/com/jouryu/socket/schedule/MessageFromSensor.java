@@ -1,6 +1,7 @@
 package com.jouryu.socket.schedule;
 
 import com.jouryu.socket.common.CommandTypeEnum;
+import com.jouryu.socket.model.Monitor;
 import com.jouryu.socket.model.Sensor;
 import com.jouryu.socket.common.CacheData;
 import com.jouryu.socket.util.Utils;
@@ -40,9 +41,9 @@ public class MessageFromSensor implements SchedulingConfigurer {
     }
 
     /**
-     * 每5秒往所有传感器客户端发送请求, 传感器接收到之后会发送数据
+     * 每6秒往所有传感器客户端发送请求, 传感器接收到之后会发送数据
      */
-    @Scheduled(fixedRate = 5000)
+    @Scheduled(fixedRate = 6000)
     public void pushMessage() {
         if (CacheData.monitorMap.size() < 1) {
             logger.info("等待传感器客户端连接...");
@@ -53,23 +54,36 @@ public class MessageFromSensor implements SchedulingConfigurer {
         CacheData.monitorMap.forEach((monitorCode, channelId) -> {
             CacheData.monitorList.forEach(monitor -> {
                 if (monitor.getMonitorCode().equals(monitorCode)) {
-                    Channel channel = CacheData.tcpChannelMap.get(channelId);
-                    monitor.getSensors().forEach(sensor -> {
-                        byte[] ret = migrateRequestMsg(sensor);
-                        loopStatus = true;
-                        channel.writeAndFlush(ret).addListener(new CustomChannelFutureListener());
-                        // 由于往channel写入操作是异步的, 不搞成同步的话, 有时多条信息会合并成一条发送给客户端
-                        while(loopStatus) {
-                            try {
-                                Thread.sleep(10);
-                            } catch (InterruptedException e) {
-                                logger.error(e.getMessage());
-                            }
-                        }
-                    });
+                    MonitorThread monitorThread = new MonitorThread(monitor, channelId);
+                    monitorThread.start();
                 }
             });
         });
+    }
+
+    private class MonitorThread extends Thread {
+        Monitor monitor;
+        String channelId;
+
+        public MonitorThread(Monitor monitor, String channelId) {
+            super();
+            this.monitor = monitor;
+            this.channelId = channelId;
+        }
+
+        @Override
+        public void run() {
+            Channel channel = CacheData.tcpChannelMap.get(channelId);
+            monitor.getSensors().forEach(sensor -> {
+                byte[] ret = migrateRequestMsg(sensor);
+                channel.writeAndFlush(ret).addListener(new CustomChannelFutureListener());
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    logger.error(e.getMessage());
+                }
+            });
+        }
     }
 
     private class CustomChannelFutureListener implements ChannelFutureListener {
